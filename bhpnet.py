@@ -92,26 +92,27 @@ def client_sender(buffer):
         # connect to our target host
         client.connect((target, port))
         if len(buffer):
-            client.send(buffer)
+            client.send(buffer.encode())
 
         while True:
             # now wait for data back
             recv_len = 1
             response = ""
             while recv_len:
-                data = client.recv(4096)
+                data = client.recv(4096).decode()
                 recv_len = len(data)
+                response += data
                 if recv_len < 4096:
                     break
 
-                print(response, end=" ")
+            print(response, end="")
 
-                # wait for more input
-                buffer = input("")
-                buffer += "\n"
+            # wait for more input
+            buffer = input("")
+            buffer += "\n"
 
-                # send it off
-                client.send(buffer)
+            # send it off
+            client.send(buffer.encode())
     except Exception as e:
         print(str(e))
         print("[*]Exception! Exiting.")
@@ -136,7 +137,7 @@ def server_loop():
         client_socket, addr = server.accept()
 
         # spin off a thread to handle our new client
-        client_thread = threading.Thread(target=client_handler(), args=(client_socket,))
+        client_thread = threading.Thread(target=client_handler, args=(client_socket,))
         client_thread.start()
 
 
@@ -177,7 +178,7 @@ def client_handler(client_socket):
 
         # now we take these bytes and and try to write them out
         try:
-            file_descriptor = open(upload_destination,"wb")
+            file_descriptor = open(upload_destination, "wb")
             file_descriptor.write(file_buffer)
             file_descriptor.close()
 
@@ -201,12 +202,12 @@ def client_handler(client_socket):
 
         while True:
             # show a simple prompt
-            client_socket.send("<BHP:#>")
+            client_socket.send("<BHP:#> ".encode())
 
             # now we receive until we see a line feed (enter key)
             cmd_buffer = ""
             while "\n" not in cmd_buffer:
-                cmd_buffer += client_socket.recv(1024)
+                cmd_buffer += client_socket.recv(1024).decode()
 
             # send back the command output
             response = run_command(cmd_buffer)
